@@ -32,13 +32,22 @@ namespace NVorbis.Ogg
         public long GetGranuleCount()
         {
             if (_reader == null) throw new ObjectDisposedException(nameof(PacketProvider));
-
-            if (!_reader.HasAllPages)
-            {
-                // this will force the reader to attempt to read all pages
-                _reader.GetPage(int.MaxValue, out _, out _, out _, out _, out _, out _);
-            }
+            //Instead of fetching all pages, we can just get the last page and return its granule position
+            //This is because the last page's granule position is the total number of granules in the stream
+            //The quickest way to do it is to seek to the end of the file,
+            //then back up to the last Ogg page header you find and read its granulePosition
+            //(which is the total number of samples per channel in the file).
+            
+            
+            var lastPage = _reader.GetLastPage();
             return _reader.MaxGranulePosition.Value;
+            
+            // if (!_reader.HasAllPages)
+            // {
+            //     // this will force the reader to attempt to read all pages
+            //     _reader.GetPage(int.MaxValue, out _, out _, out _, out _, out _, out _);
+            // }
+            // return _reader.MaxGranulePosition.Value;
         }
 
         public IPacket GetNextPacket()

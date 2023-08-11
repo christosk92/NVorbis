@@ -1,31 +1,39 @@
 ﻿using NVorbis;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
+using NAudio.Vorbis;
+using NAudio.Wave;
+using TestApp.Convenience;
 
 namespace TestApp
 {
     static class Program
     {
-        const string OGG_FILE = @"..\TestFiles\3test.ogg";
+        const string OGG_FILE = "ifeelyou.ogg";
         //const string OGG_FILE = @"..\TestFiles\2test.ogg";
 
-        static void Main()
+        static async Task Main()
         {
-            var wavFileName = Path.Combine(Path.GetTempPath(), Path.ChangeExtension(Path.GetFileName(OGG_FILE), "wav"));
-
-            using (var fs = File.OpenRead(OGG_FILE))
+            var fs = File.OpenRead(OGG_FILE);
             //using (var fwdStream = new ForwardOnlyStream(fs))
-            using (var vorbRead = new VorbisReader(fs, false))
-            using (var waveWriter = new WaveWriter(wavFileName, vorbRead.SampleRate, vorbRead.Channels))
+            var vorbRead = new VorbisWaveReader(fs, false);
+            var waveout = new WaveOutEvent();
+            waveout.Init(vorbRead);
+            waveout.Play();
+
+            int iteration = 0;
+            while (waveout.PlaybackState != PlaybackState.Stopped)
             {
-                var sampleBuf = new float[vorbRead.SampleRate * vorbRead.Channels * 4];
-                int cnt;
-                while ((cnt = vorbRead.ReadSamples(sampleBuf, 0, sampleBuf.Length)) > 0)
+                if (iteration == 2)
                 {
-                    waveWriter.WriteSamples(sampleBuf, 0, cnt);
+                    var time = vorbRead.TotalTime;
+                    vorbRead.CurrentTime = vorbRead.TotalTime / 2;
                 }
+
+                iteration++;
+                await Task.Delay(1000);
             }
-            Process.Start(wavFileName);
         }
     }
 }

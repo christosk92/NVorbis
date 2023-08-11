@@ -6,7 +6,8 @@ namespace NVorbis.Ogg
 {
     class StreamPageReader : IStreamPageReader
     {
-        internal static Func<IStreamPageReader, int, Contracts.IPacketProvider> CreatePacketProvider { get; set; } = (pr, ss) => new PacketProvider(pr, ss);
+        internal static Func<IStreamPageReader, int, Contracts.IPacketProvider> CreatePacketProvider { get; set; } =
+            (pr, ss) => new PacketProvider(pr, ss);
 
         private readonly IPageData _reader;
         private readonly List<long> _pageOffsets = new List<long>();
@@ -60,13 +61,15 @@ namespace NVorbis.Ogg
                         // uuuuh, what?!
                         throw new System.IO.InvalidDataException("Granule Position regressed?!");
                     }
+
                     _maxGranulePos = _reader.GranulePosition;
                 }
                 // granule position == -1, so this page doesn't complete any packets
                 // we don't really care if it's a continuation itself, only that it is continued and has a single packet
                 else if (_firstDataPageIndex.HasValue && (!_reader.IsContinued || _reader.PacketCount != 1))
                 {
-                    throw new System.IO.InvalidDataException("Granule Position was -1 but page does not have exactly 1 continued packet.");
+                    throw new System.IO.InvalidDataException(
+                        "Granule Position was -1 but page does not have exactly 1 continued packet.");
                 }
 
                 if ((_reader.PageFlags & PageFlags.EndOfStream) != 0)
@@ -111,6 +114,7 @@ namespace NVorbis.Ogg
                 {
                     _cachedPagePackets = packets;
                 }
+
                 return packets;
             }
             finally
@@ -150,10 +154,12 @@ namespace NVorbis.Ogg
                     }
                 }
             }
+
             if (pageIndex == -1)
             {
                 throw new ArgumentOutOfRangeException(nameof(granulePos));
             }
+
             return pageIndex;
         }
 
@@ -166,6 +172,7 @@ namespace NVorbis.Ogg
                     return -1;
                 }
             }
+
             return _firstDataPageIndex.Value;
         }
 
@@ -182,6 +189,7 @@ namespace NVorbis.Ogg
                         {
                             pageIndex = -1;
                         }
+
                         break;
                     }
                 }
@@ -194,6 +202,7 @@ namespace NVorbis.Ogg
                     }
                 }
             }
+
             return pageIndex;
         }
 
@@ -222,6 +231,7 @@ namespace NVorbis.Ogg
                     _reader.Release();
                 }
             }
+
             granulePos = 0;
             return false;
         }
@@ -234,7 +244,8 @@ namespace NVorbis.Ogg
             while ((dist = high - low) > 0)
             {
                 // try to find the right page by assumming they are all about the same size
-                var index = low + (int)(dist * ((granulePos - lowGranulePos) / (double)(highGranulePos - lowGranulePos)));
+                var index = low +
+                            (int)(dist * ((granulePos - lowGranulePos) / (double)(highGranulePos - lowGranulePos)));
 
                 // go get the actual position of the selected page
                 if (!GetPageRaw(index, out var idxGranulePos))
@@ -261,6 +272,7 @@ namespace NVorbis.Ogg
                     return index + 1;
                 }
             }
+
             return low;
         }
 
@@ -280,6 +292,7 @@ namespace NVorbis.Ogg
                     pageGranulePos = _reader.GranulePosition;
                     return true;
                 }
+
                 pageGranulePos = 0;
                 return false;
             }
@@ -289,7 +302,8 @@ namespace NVorbis.Ogg
             }
         }
 
-        public bool GetPage(int pageIndex, out long granulePos, out bool isResync, out bool isContinuation, out bool isContinued, out int packetCount, out int pageOverhead)
+        public bool GetPage(int pageIndex, out long granulePos, out bool isResync, out bool isContinuation,
+            out bool isContinued, out int packetCount, out int pageOverhead)
         {
             if (_lastPageIndex == pageIndex)
             {
@@ -313,7 +327,8 @@ namespace NVorbis.Ogg
                         if (pageIndex < _pageOffsets.Count)
                         {
                             isResync = _reader.IsResync.Value;
-                            ReadPageData(pageIndex, out granulePos, out isContinuation, out isContinued, out packetCount, out pageOverhead);
+                            ReadPageData(pageIndex, out granulePos, out isContinuation, out isContinued,
+                                out packetCount, out pageOverhead);
                             return true;
                         }
                     }
@@ -347,7 +362,8 @@ namespace NVorbis.Ogg
                     if (_reader.ReadPageAt(offset))
                     {
                         _lastPageIsResync = isResync;
-                        ReadPageData(pageIndex, out granulePos, out isContinuation, out isContinued, out packetCount, out pageOverhead);
+                        ReadPageData(pageIndex, out granulePos, out isContinuation, out isContinued, out packetCount,
+                            out pageOverhead);
                         return true;
                     }
                 }
@@ -366,7 +382,27 @@ namespace NVorbis.Ogg
             return false;
         }
 
-        private void ReadPageData(int pageIndex, out long granulePos, out bool isContinuation, out bool isContinued, out int packetCount, out int pageOverhead)
+        public bool GetLastPage()
+        {
+            _reader.Lock();
+            try
+            {
+                if (_reader.ReadLastPage(out var pageIndex))
+                {
+                    ReadPageData(pageIndex, out _, out _, out _,out _, out _);
+                    return true;
+                }
+            }
+            finally
+            {
+                _reader.Release();
+            }
+
+            return false;
+        }
+
+        private void ReadPageData(int pageIndex, out long granulePos, out bool isContinuation, out bool isContinued,
+            out int packetCount, out int pageOverhead)
         {
             _cachedPagePackets = null;
             _lastPageGranulePos = granulePos = _reader.GranulePosition;
@@ -386,7 +422,7 @@ namespace NVorbis.Ogg
 
         public bool HasAllPages { get; private set; }
 
-        public long? MaxGranulePosition => HasAllPages ? (long?)_maxGranulePos : null;
+        public long? MaxGranulePosition => (long?)_maxGranulePos ;
 
         public int FirstDataPageIndex => FindFirstDataPage();
     }
