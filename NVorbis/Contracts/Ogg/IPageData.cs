@@ -9,6 +9,7 @@ namespace NVorbis.Contracts.Ogg
         int SequenceNumber { get; }
         PageFlags PageFlags { get; }
         long GranulePosition { get; }
+        long? MaxGranulePosition { get; }
         short PacketCount { get; }
         bool? IsResync { get; }
         bool IsContinued { get; }

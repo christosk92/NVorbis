@@ -117,6 +117,40 @@ namespace NVorbis.Ogg
             _nextPageOffset = StreamPosition;
         }
 
+        protected override bool AddLastPage(int streamSerial, byte[] pageBuf, bool isResync)
+        {
+            var segCnt = pageBuf[26];
+            var dataLen = 0;
+            var pktCnt = 0;
+            var isContinued = false;
+
+            var size = 0;
+            for (int i = 0, idx = 27; i < segCnt; i++, idx++)
+            {
+                var seg = pageBuf[idx];
+                size += seg;
+                dataLen += seg;
+                if (seg < 255)
+                {
+                    if (size > 0)
+                    {
+                        ++pktCnt;
+                    }
+                    size = 0;
+                }
+            }
+            if (size > 0)
+            {
+                isContinued = pageBuf[segCnt + 26] == 255;
+                ++pktCnt;
+            }
+            MaxGranulePosition = BitConverter.ToInt64(pageBuf, 6);
+
+            return true;
+        }
+
+        public long? MaxGranulePosition { get; set; }
+
         protected override void PrepareStreamForNextPage()
         {
             SeekStream(_nextPageOffset);
@@ -130,7 +164,8 @@ namespace NVorbis.Ogg
             // if the page doesn't have any packets, we can't use it
             if (PacketCount == 0) return false;
 
-            _packets = ReadPackets(PacketCount, new Span<byte>(pageBuf, 27, pageBuf[26]), new Memory<byte>(pageBuf, 27 + pageBuf[26], pageBuf.Length - 27 - pageBuf[26]));
+            _packets = ReadPackets(PacketCount, new Span<byte>(pageBuf, 27, pageBuf[26]), 
+                new Memory<byte>(pageBuf, 27 + pageBuf[26], pageBuf.Length - 27 - pageBuf[26]));
 
             if (_streamReaders.TryGetValue(streamSerial, out var spr))
             {

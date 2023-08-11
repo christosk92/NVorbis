@@ -18,6 +18,11 @@ namespace NVorbis.Ogg
             _newStreamCallback = newStreamCallback;
         }
 
+        protected override bool AddLastPage(int streamSerial, byte[] pageBuf, bool isResync)
+        {
+            throw new NotImplementedException();
+        }
+
         protected override bool AddPage(int streamSerial, byte[] pageBuf, bool isResync)
         {
             if (_packetProviders.TryGetValue(streamSerial, out var pp))

@@ -75,6 +75,22 @@ namespace NVorbis.Ogg
             return _crc.Test(BitConverter.ToUInt32(pageBuf, 22));
         }
 
+        private bool AddLastPage(byte[] pageBuf, bool isResync)
+        {
+            var streamSerial = BitConverter.ToInt32(pageBuf, 14);
+            if (!_ignoredSerials.Contains(streamSerial))
+            {
+                if (AddLastPage(streamSerial, pageBuf, isResync))
+                {
+                    ContainerBits += 8 * (27 + pageBuf[26]);
+                    return true;
+                }
+
+                _ignoredSerials.Add(streamSerial);
+            }
+
+            return false;
+        }
         private bool AddPage(byte[] pageBuf, bool isResync)
         {
             var streamSerial = BitConverter.ToInt32(pageBuf, 14);
@@ -233,6 +249,7 @@ namespace NVorbis.Ogg
         {
         }
 
+        abstract protected bool AddLastPage(int streamSerial, byte[] pageBuf, bool isResync);
         abstract protected bool AddPage(int streamSerial, byte[] pageBuf, bool isResync);
 
         abstract protected void SetEndOfStreams();
@@ -322,7 +339,7 @@ namespace NVorbis.Ogg
 
             var ofs = 0;
             int cnt;
-            PrepareStreamForNextPage();
+          // PrepareStreamForNextPage();
 
 
             var streamLengthInBytes = _stream.Length;
@@ -389,10 +406,10 @@ namespace NVorbis.Ogg
                             ClearEnqueuedData(bytesRead);
 
                             // also, we need to let our inheritors have a chance to save state for next time
-                            SaveNextPageSearch();
+                           // SaveNextPageSearch();
 
                             // pass it to our inheritor
-                            if (AddPage(pageBuf, isResync))
+                            if (AddLastPage(pageBuf, isResync))
                             {
                                 pageIndex = int.MaxValue;
                                 return true;

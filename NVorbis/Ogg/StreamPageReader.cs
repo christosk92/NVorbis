@@ -389,7 +389,7 @@ namespace NVorbis.Ogg
             {
                 if (_reader.ReadLastPage(out var pageIndex))
                 {
-                    ReadPageData(pageIndex, out _, out _, out _,out _, out _);
+                   // ReadPageData(pageIndex, out _, out _, out _,out _, out _);
                     return true;
                 }
             }
@@ -422,8 +422,8 @@ namespace NVorbis.Ogg
 
         public bool HasAllPages { get; private set; }
 
-        public long? MaxGranulePosition => (long?)_maxGranulePos ;
-
+        public long? MaxGranulePosition => HasAllPages ? (long?)_maxGranulePos : null;
+        public long? ActualMaxGranulePosition => (long?)_reader.MaxGranulePosition;
         public int FirstDataPageIndex => FindFirstDataPage();
     }
 }

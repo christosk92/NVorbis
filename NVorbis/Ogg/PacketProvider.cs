@@ -40,7 +40,7 @@ namespace NVorbis.Ogg
             
             
             var lastPage = _reader.GetLastPage();
-            return _reader.MaxGranulePosition.Value;
+            return _reader.ActualMaxGranulePosition.Value;
             
             // if (!_reader.HasAllPages)
             // {
